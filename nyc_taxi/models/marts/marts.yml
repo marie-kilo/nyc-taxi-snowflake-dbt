@@ -1,0 +1,154 @@
+version: 2
+
+models:
+  - name: daily_summary
+    description: >
+      Résumé quotidien des trajets NYC Yellow Taxi 2025.
+      Ce modèle fournit les principaux KPIs financiers et opérationnels par jour.
+
+    columns:
+      - name: PICKUP_DATE
+        description: "Date de prise en charge."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: DAY_TYPE
+        description: "Type de jour : WEEKDAY ou WEEKEND."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - WEEKDAY
+                  - WEEKEND
+
+      - name: TOTAL_TRIPS
+        description: "Nombre total de trajets du jour."
+        data_tests:
+          - not_null
+
+      - name: AVG_TRIP_DISTANCE
+        description: "Distance moyenne des trajets en miles."
+
+      - name: AVG_TRIP_DURATION_MINUTES
+        description: "Durée moyenne des trajets en minutes."
+
+      - name: AVG_SPEED_MPH
+        description: "Vitesse moyenne des trajets en miles par heure."
+
+      - name: TOTAL_REVENUE
+        description: "Somme des montants totaux des trajets du jour."
+        data_tests:
+          - not_null
+
+      - name: AVG_REVENUE_PER_TRIP
+        description: "Montant total moyen par trajet."
+
+      - name: TOTAL_TIPS
+        description: "Somme des pourboires du jour."
+
+      - name: AVG_TIP_RATE_PERCENT
+        description: "Taux moyen de pourboire en pourcentage."
+
+
+  - name: zone_analysis
+    description: >
+      Analyse des trajets agrégée par zone de départ.
+      Ce modèle permet d'étudier le volume, les revenus et les performances
+      opérationnelles des différentes zones.
+
+    columns:
+      - name: PULOCATIONID
+        description: "Identifiant de la zone de prise en charge."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: TOTAL_TRIPS
+        description: "Nombre total de trajets au départ de la zone."
+        data_tests:
+          - not_null
+
+      - name: AVG_TRIP_DISTANCE
+        description: "Distance moyenne des trajets en miles."
+
+      - name: AVG_TRIP_DURATION_MINUTES
+        description: "Durée moyenne des trajets en minutes."
+
+      - name: AVG_SPEED_MPH
+        description: "Vitesse moyenne des trajets en miles par heure."
+
+      - name: TOTAL_REVENUE
+        description: "Revenu total généré par les trajets de la zone."
+        data_tests:
+          - not_null
+
+      - name: AVG_REVENUE_PER_TRIP
+        description: "Revenu moyen par trajet."
+
+      - name: TOTAL_TIPS
+        description: "Montant total des pourboires."
+
+      - name: AVG_TIP_RATE_PERCENT
+        description: "Taux moyen de pourboire."
+
+
+  - name: hourly_patterns
+    description: >
+      Analyse des patterns horaires des trajets NYC Yellow Taxi.
+      Les données sont agrégées par heure, période de la journée
+      et type de jour.
+
+    columns:
+      - name: PICKUP_HOUR
+        description: "Heure de prise en charge, comprise entre 0 et 23."
+        data_tests:
+          - not_null
+
+      - name: TIME_PERIOD
+        description: "Période horaire : MORNING, AFTERNOON, EVENING ou NIGHT."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - MORNING
+                  - AFTERNOON
+                  - EVENING
+                  - NIGHT
+
+      - name: DAY_TYPE
+        description: "Type de jour : WEEKDAY ou WEEKEND."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - WEEKDAY
+                  - WEEKEND
+
+      - name: TOTAL_TRIPS
+        description: "Nombre total de trajets pour la combinaison heure/type de jour."
+        data_tests:
+          - not_null
+
+      - name: AVG_TRIP_DISTANCE
+        description: "Distance moyenne des trajets."
+
+      - name: AVG_TRIP_DURATION_MINUTES
+        description: "Durée moyenne des trajets en minutes."
+
+      - name: AVG_SPEED_MPH
+        description: "Vitesse moyenne des trajets en miles par heure."
+        data_tests:
+          - not_null
+
+      - name: TOTAL_REVENUE
+        description: "Revenu total pour cette tranche horaire."
+
+      - name: AVG_REVENUE_PER_TRIP
+        description: "Revenu moyen par trajet."
+
+      - name: AVG_TIP_RATE_PERCENT
+        description: "Taux moyen de pourboire."
