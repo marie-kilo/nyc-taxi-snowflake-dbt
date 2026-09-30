@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Données brutes NYC Yellow Taxi chargées depuis les fichiers Parquet."
+    database: NYC_TAXI_DB
+    schema: RAW
+
+    tables:
+      - name: yellow_taxi_trips
+        identifier: YELLOW_TAXI_TRIPS
+        description: "Table brute contenant les trajets Yellow Taxi 2025 sans transformation."

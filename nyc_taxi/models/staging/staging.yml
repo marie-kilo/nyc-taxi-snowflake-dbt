@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: stg_yellow_taxi_trips
+    description: "Trajets NYC Yellow Taxi 2025 nettoyés et standardisés à partir de la couche RAW."
+
+    columns:
+      - name: PICKUP_DATETIME
+        description: "Date et heure de prise en charge du trajet."
+        data_tests:
+          - not_null
+
+      - name: DROPOFF_DATETIME
+        description: "Date et heure de dépose du trajet."
+        data_tests:
+          - not_null
+
+      - name: TRIP_DISTANCE
+        description: "Distance du trajet en miles."
+        data_tests:
+          - not_null
+
+      - name: FARE_AMOUNT
+        description: "Montant tarifaire du trajet."
+        data_tests:
+          - not_null
+
+      - name: TOTAL_AMOUNT
+        description: "Montant total facturé pour le trajet."
+        data_tests:
+          - not_null
+
+      - name: PULOCATIONID
+        description: "Identifiant de la zone de départ."
+
+      - name: DOLOCATIONID
+        description: "Identifiant de la zone d'arrivée."
