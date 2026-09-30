@@ -1,0 +1,74 @@
+version: 2
+
+models:
+  - name: int_trip_metrics
+    description: >
+      Modèle intermédiaire enrichissant les trajets NYC Yellow Taxi nettoyés
+      avec des métriques opérationnelles et des dimensions analytiques.
+
+    columns:
+      - name: PICKUP_DATE
+        description: "Date de prise en charge du trajet."
+        data_tests:
+          - not_null
+
+      - name: PICKUP_HOUR
+        description: "Heure de prise en charge, comprise entre 0 et 23."
+        data_tests:
+          - not_null
+
+      - name: TRIP_DURATION_SECONDS
+        description: "Durée du trajet en secondes."
+        data_tests:
+          - not_null
+
+      - name: TRIP_DURATION_MINUTES
+        description: "Durée du trajet en minutes."
+        data_tests:
+          - not_null
+
+      - name: SPEED_MPH
+        description: "Vitesse moyenne du trajet en miles par heure."
+        data_tests:
+          - not_null
+
+      - name: TIP_RATE_PERCENT
+        description: >
+          Pourcentage de pourboire calculé par rapport au tarif de base.
+          La valeur peut être NULL lorsque FARE_AMOUNT vaut zéro.
+
+      - name: DISTANCE_CATEGORY
+        description: >
+          Catégorie de distance : SHORT, MEDIUM, LONG ou VERY_LONG.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - SHORT
+                  - MEDIUM
+                  - LONG
+                  - VERY_LONG
+
+      - name: TIME_PERIOD
+        description: >
+          Période horaire du trajet : MORNING, AFTERNOON, EVENING ou NIGHT.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - MORNING
+                  - AFTERNOON
+                  - EVENING
+                  - NIGHT
+
+      - name: DAY_TYPE
+        description: "Type de jour : WEEKDAY ou WEEKEND."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - WEEKDAY
+                  - WEEKEND
