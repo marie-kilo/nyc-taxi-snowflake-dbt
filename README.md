@@ -39,8 +39,9 @@ Les principaux objectifs du projet sont :
 - industrialiser les transformations avec dbt Core ;
 - mettre en place des tests automatiques de qualité ;
 - générer automatiquement la documentation dbt ;
-- préparer les données pour un futur dashboard décisionnel ;
-- préparer l'automatisation du pipeline avec GitHub Actions.
+- construire un dashboard interactif avec Streamlit à partir des tables analytiques ;
+- automatiser l'exécution des transformations dbt avec GitHub Actions ;
+- sécuriser les informations de connexion avec GitHub Actions Secrets.
 
 ---
 
@@ -242,13 +243,10 @@ Le projet utilise les technologies suivantes :
 - **Python 3.12** : environnement local d'exécution ;
 - **Parquet** : format des fichiers sources ;
 - **Git** : gestion de versions ;
-- **GitHub** : hébergement du repository et historique du projet.
-
-Technologies prévues dans les prochaines étapes :
-
-- **GitHub Actions** : orchestration automatisée ;
-- **Streamlit** : dashboard interactif.
-
+- **GitHub** : hébergement du repository et historique du projet ;
+- **GitHub Actions** : orchestration automatisée du pipeline dbt ;
+- **Streamlit** : création du dashboard interactif ;
+- **Snowflake Connector for Python** : connexion du dashboard à Snowflake.
 ---
 
 ## Dataset
@@ -919,41 +917,42 @@ Les arrondis sont réalisés lors de la création des agrégations finales.
 ```text
 nyc-taxi-snowflake-dbt/
 │
+├── .github/
+│   └── workflows/
+│       └── dbt.yml
+│
+├── dashboard/
+│   └── app.py
+│
 ├── data/
 │   └── fichiers Parquet NYC Yellow Taxi 2025
 │
 ├── docs/
+│   ├── github_action.png
+│   └── dashboard.png
 │
 ├── nyc_taxi/
-│   │
 │   ├── analyses/
-│   │
 │   ├── macros/
 │   │   └── generate_schema_name.sql
-│   │
 │   ├── models/
-│   │   │
 │   │   ├── staging/
 │   │   │   ├── _sources.yml
 │   │   │   ├── staging.yml
 │   │   │   └── stg_yellow_taxi_trips.sql
-│   │   │
 │   │   ├── intermediate/
 │   │   │   ├── intermediate.yml
 │   │   │   └── int_trip_metrics.sql
-│   │   │
 │   │   └── marts/
 │   │       ├── marts.yml
 │   │       ├── daily_summary.sql
 │   │       ├── zone_analysis.sql
 │   │       └── hourly_patterns.sql
-│   │
 │   ├── tests/
 │   │   ├── test_valid_distance.sql
 │   │   ├── test_valid_dates.sql
 │   │   ├── test_non_negative_amounts.sql
 │   │   └── test_valid_trip_metrics.sql
-│   │
 │   └── dbt_project.yml
 │
 ├── sql/
@@ -1045,7 +1044,8 @@ Les éléments suivants sont nécessaires :
 - Git ;
 - un compte Snowflake ;
 - dbt Core ;
-- dbt-snowflake.
+- dbt-snowflake;
+- Streamlit.
 
 Versions utilisées :
 
@@ -1053,6 +1053,7 @@ Versions utilisées :
 Python         3.12.3
 dbt-core       1.12.5
 dbt-snowflake  1.12.1
+Streamlit      1.64.0
 ```
 
 ---
@@ -1091,6 +1092,7 @@ Le fichier `requirements.txt` contient :
 ```text
 dbt-core==1.12.5
 dbt-snowflake==1.12.1
+streamlit==1.64.0
 ```
 
 ---
@@ -1490,6 +1492,10 @@ index.html
 
 Le workflow a été testé manuellement depuis GitHub Actions.
 
+### Capture de l'exécution GitHub Actions
+
+![GitHub Actions - dbt Snowflake Pipeline](docs/github_action.png)
+
 Résultat de la première exécution :
 
 ```text
@@ -1544,3 +1550,326 @@ Cette séparation permet de distinguer :
 - les transformations analytiques gérées par dbt.
 
 Une évolution future pourrait automatiser également l'arrivée et l'ingestion de nouveaux fichiers Parquet.
+
+
+---
+
+## Dashboard Streamlit
+
+Un dashboard interactif a été développé avec **Streamlit** afin de visualiser les principaux KPIs produits par le Data Warehouse.
+
+Le dashboard interroge directement les tables du schéma :
+
+```text
+FINAL
+```
+
+dans Snowflake.
+
+Le fichier principal est :
+
+```text
+dashboard/app.py
+```
+
+---
+
+### Connexion à Snowflake
+
+Le dashboard utilise le connecteur Python Snowflake :
+
+```text
+snowflake-connector-python
+```
+
+Les informations de connexion sont stockées localement dans :
+
+```text
+.streamlit/secrets.toml
+```
+
+Ce fichier est exclu du repository avec `.gitignore` afin d'éviter de versionner les identifiants Snowflake.
+
+---
+
+### KPIs affichés
+
+Le dashboard présente plusieurs indicateurs principaux :
+
+- nombre total de trajets ;
+- chiffre d'affaires total ;
+- distance moyenne ;
+- durée moyenne des trajets.
+
+Valeurs obtenues sur les données nettoyées 2025 :
+
+```text
+Nombre total de trajets  : 44 178 660
+Chiffre d'affaires total : $1 275 982 780
+Distance moyenne         : 3.49 miles
+Durée moyenne            : 17.60 minutes
+```
+
+---
+
+### Visualisations
+
+Le dashboard contient plusieurs visualisations interactives.
+
+#### Évolution quotidienne des trajets
+
+Cette visualisation utilise :
+
+```text
+FINAL.DAILY_SUMMARY
+```
+
+et permet de suivre l'évolution du nombre de trajets au cours de l'année 2025.
+
+#### Nombre de trajets par heure
+
+Cette visualisation utilise :
+
+```text
+FINAL.HOURLY_PATTERNS
+```
+
+et permet d'identifier les heures de forte activité.
+
+#### Top 10 des zones de prise en charge
+
+Cette visualisation utilise :
+
+```text
+FINAL.ZONE_ANALYSIS
+```
+
+et affiche les dix zones ayant le plus grand nombre de trajets.
+
+Les zones sont actuellement représentées par leur identifiant `PULOCATIONID`.
+Une amélioration future consisterait à intégrer le fichier officiel de correspondance des zones NYC Taxi afin d'afficher le nom des boroughs et des zones à la place des identifiants numériques.
+
+---
+
+### Filtre interactif
+
+Un filtre permet de comparer l'activité selon le type de jour :
+
+```text
+Tous
+WEEKDAY
+WEEKEND
+```
+
+Le graphique horaire est automatiquement recalculé selon la sélection.
+
+---
+
+### Exécution locale
+
+Pour lancer le dashboard :
+
+```bash
+streamlit run dashboard/app.py
+```
+
+L'application est ensuite accessible localement, généralement à l'adresse :
+
+```text
+http://localhost:8501
+```
+
+---
+
+### Capture du dashboard
+
+![Dashboard Streamlit](docs/dashboard.png)
+
+Le dashboard permet ainsi de transformer les tables analytiques Snowflake en visualisations directement exploitables pour l'analyse métier.
+
+
+---
+
+## Analyse réflexive
+
+### Difficultés rencontrées et solutions apportées
+
+Plusieurs difficultés ont été rencontrées pendant le projet.
+
+#### Compréhension et préparation des données brutes
+
+Les fichiers Parquet contenaient plusieurs types d'anomalies : dates incohérentes, distances nulles ou aberrantes, montants négatifs, durées invalides et valeurs manquantes.
+
+La première difficulté a donc été de définir des règles de nettoyage suffisamment strictes pour améliorer la qualité des données sans supprimer inutilement des millions de lignes.
+
+La solution a consisté à :
+
+- analyser chaque type d'anomalie séparément ;
+- quantifier le nombre de lignes concernées ;
+- distinguer les colonnes critiques des colonnes secondaires ;
+- documenter les règles retenues ;
+- mesurer le taux global de rejet après application de l'ensemble des règles.
+
+Cette approche a permis de conserver environ 90,67 % des données initiales.
+
+#### Gestion des timestamps
+
+Les dates de prise en charge et de dépose étaient stockées dans la couche RAW sous forme numérique.
+
+Il a fallu identifier leur unité puis utiliser une conversion adaptée avec :
+
+```sql
+TO_TIMESTAMP_NTZ(column_name, 6)
+```
+
+La conversion a été réalisée uniquement dans les couches de transformation afin de conserver la donnée brute dans `RAW`.
+
+#### Gestion de la précision des métriques
+
+Lors des premiers contrôles du modèle intermédiaire, certaines vitesses très faibles devenaient égales à zéro après arrondi.
+
+La solution a été de conserver la précision complète dans le modèle `INT_TRIP_METRICS` et de réaliser les arrondis uniquement au niveau des tables analytiques finales.
+
+Cela évite de dégrader les données trop tôt dans le pipeline.
+
+#### Organisation des schémas dbt
+
+Lors de la configuration de dbt, la gestion des schémas nécessitait de conserver :
+
+```text
+STAGING
+```
+
+pour les modèles intermédiaires et :
+
+```text
+FINAL
+```
+
+pour les marts.
+
+Une macro personnalisée `generate_schema_name.sql` a été utilisée afin de contrôler précisément le nom du schéma final.
+
+#### Automatisation avec GitHub Actions
+
+La mise en place de GitHub Actions nécessitait de connecter dbt à Snowflake sans exposer les identifiants.
+
+La solution a été d'utiliser les GitHub Actions Secrets et de créer automatiquement le fichier `profiles.yml` pendant l'exécution du workflow.
+
+Le workflow a ensuite été validé avec succès depuis GitHub.
+
+#### Connexion du dashboard à Snowflake
+
+Le dashboard Streamlit devait accéder aux données Snowflake sans stocker les identifiants directement dans le code.
+
+Les informations sensibles ont donc été placées dans :
+
+```text
+.streamlit/secrets.toml
+```
+
+et ce fichier a été exclu du repository avec `.gitignore`.
+
+---
+
+### Choix techniques et justification
+
+#### Architecture RAW / STAGING / FINAL
+
+L'architecture en trois couches a été choisie afin de séparer clairement les responsabilités du pipeline :
+
+- `RAW` conserve la donnée source ;
+- `STAGING` applique les règles de qualité et les enrichissements ;
+- `FINAL` contient les tables directement exploitables pour les analyses.
+
+Cette séparation facilite la maintenance, les contrôles et l'évolution du projet.
+
+#### Utilisation d'un stage Snowflake interne
+
+Un stage interne Snowflake a été utilisé afin de rester dans l'environnement disponible pour le projet et d'éviter de dépendre d'une infrastructure Cloud externe supplémentaire.
+
+Dans un environnement de production, un stage externe connecté à un stockage objet comme S3 pourrait être privilégié pour automatiser davantage l'arrivée des données.
+
+#### Utilisation de dbt Core
+
+dbt Core a été retenu pour industrialiser les transformations SQL.
+
+Il apporte notamment :
+
+- une organisation modulaire des transformations ;
+- la gestion des dépendances ;
+- les tests automatiques ;
+- la documentation ;
+- le lineage ;
+- l'intégration avec Git et GitHub Actions.
+
+#### Modèles intermédiaires en vues
+
+Les modèles `staging` et `intermediate` sont matérialisés sous forme de vues afin de limiter la duplication des données.
+
+Les marts sont matérialisés sous forme de tables afin d'améliorer leur disponibilité pour les analyses et le dashboard.
+
+#### Conservation des valeurs NULL non critiques
+
+Les lignes comportant certaines valeurs manquantes ont été conservées lorsque les colonnes concernées n'étaient pas essentielles aux KPIs.
+
+Ce choix évite de supprimer une part importante du dataset pour des informations secondaires.
+
+---
+
+### Compétences acquises
+
+Ce projet m'a permis de renforcer plusieurs compétences de Data Engineering :
+
+- conception d'un Data Warehouse sur Snowflake ;
+- ingestion de fichiers Parquet ;
+- analyse de qualité des données ;
+- développement de transformations SQL ;
+- conception d'une architecture RAW / STAGING / FINAL ;
+- utilisation de dbt Core ;
+- création de modèles staging, intermediate et marts ;
+- développement de tests dbt ;
+- génération de documentation et de lineage ;
+- gestion des secrets ;
+- automatisation avec GitHub Actions ;
+- création d'un dashboard Streamlit ;
+- connexion sécurisée entre Python et Snowflake ;
+- versionnement d'un projet Data Engineering avec Git.
+
+---
+
+### Compétences à approfondir
+
+Plusieurs axes pourraient encore être approfondis :
+
+- automatisation complète de l'ingestion des nouveaux fichiers Parquet ;
+- utilisation d'un stage externe connecté à un stockage Cloud ;
+- optimisation des coûts et performances Snowflake ;
+- gestion de volumes encore plus importants ;
+- mise en place d'environnements dbt séparés `dev`, `test` et `prod` ;
+- supervision et alerting du pipeline ;
+- déploiement du dashboard sur une plateforme Cloud ;
+- ajout du référentiel officiel des zones NYC Taxi pour afficher les noms des zones ;
+- mise en place de tests de fraîcheur des sources ;
+- orchestration plus complète avec un outil dédié si les dépendances deviennent plus complexes.
+
+---
+
+### Parallèle avec un contexte professionnel
+
+Le projet reproduit plusieurs situations rencontrées dans un environnement professionnel de Data Engineering.
+
+Les données sources peuvent contenir des erreurs, des valeurs manquantes et des valeurs aberrantes. Le rôle du Data Engineer consiste alors à construire un pipeline fiable, traçable et reproductible avant de mettre les données à disposition des utilisateurs métiers.
+
+La séparation entre les couches `RAW`, `STAGING` et `FINAL` permet également de limiter le couplage entre la source et les usages analytiques.
+
+L'utilisation de dbt, GitHub Actions et des tests automatiques permet de rapprocher le projet d'un fonctionnement en production, avec :
+
+- versionnement du code ;
+- automatisation des transformations ;
+- contrôle de qualité ;
+- gestion sécurisée des secrets ;
+- documentation technique ;
+- visualisation des données pour les utilisateurs finaux.
+
+Dans un contexte réel, ce type d'architecture pourrait servir de base à un Data Warehouse alimentant des dashboards BI, des analyses métier ou des modèles de Machine Learning.
