@@ -1296,10 +1296,251 @@ Cette commande vérifie :
 
 À ce stade du projet, le pipeline Snowflake + dbt est fonctionnel et validé.
 
-Les prochaines étapes du projet seront :
 
-- l'orchestration avec GitHub Actions ;
-- la sécurisation des secrets pour l'automatisation ;
-- la création du dashboard ;
-- l'analyse réflexive finale ;
-- la préparation de la soutenance.
+---
+
+## Orchestration avec GitHub Actions
+
+Le pipeline dbt est automatisé avec **GitHub Actions**.
+
+Le workflow est défini dans :
+
+```text
+.github/workflows/dbt.yml
+```
+
+Il permet d'exécuter automatiquement les transformations dbt sur Snowflake sans utiliser
+l'environnement local.
+
+---
+
+### Déclenchement du workflow
+
+Le workflow peut être lancé de deux manières.
+
+#### Exécution manuelle
+
+Le pipeline peut être lancé depuis l'interface GitHub :
+
+```text
+GitHub
+→ Actions
+→ dbt Snowflake Pipeline
+→ Run workflow
+```
+
+Cette possibilité est utile pour tester le pipeline ou déclencher une nouvelle exécution à la demande.
+
+#### Exécution automatique mensuelle
+
+Une planification `cron` est configurée :
+
+```yaml
+schedule:
+  - cron: "0 6 1 * *"
+```
+
+Le workflow est donc automatiquement déclenché :
+
+```text
+le 1er jour de chaque mois à 06:00 UTC
+```
+
+L'objectif est de permettre une actualisation régulière des transformations et des tables analytiques.
+
+---
+
+### Gestion sécurisée des secrets
+
+Les informations de connexion Snowflake ne sont jamais écrites directement dans le repository.
+
+Elles sont enregistrées dans les **GitHub Actions Secrets** du repository.
+
+Les secrets utilisés sont :
+
+```text
+SNOWFLAKE_ACCOUNT
+SNOWFLAKE_USER
+SNOWFLAKE_PASSWORD
+SNOWFLAKE_ROLE
+SNOWFLAKE_WAREHOUSE
+SNOWFLAKE_DATABASE
+SNOWFLAKE_SCHEMA
+```
+
+Ils sont accessibles au workflow avec la syntaxe :
+
+```yaml
+${{ secrets.NOM_DU_SECRET }}
+```
+
+Par exemple :
+
+```yaml
+SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+```
+
+Cette approche permet de séparer le code versionné des informations sensibles.
+
+---
+
+### Création du profil dbt dans GitHub Actions
+
+Lors de chaque exécution, le workflow crée automatiquement un fichier :
+
+```text
+~/.dbt/profiles.yml
+```
+
+Le profil utilisé est :
+
+```text
+nyc_taxi
+```
+
+Les paramètres de connexion sont récupérés depuis les secrets GitHub.
+
+Le schéma dbt par défaut est :
+
+```text
+STAGING
+```
+
+Le modèle source continue cependant de lire les données depuis :
+
+```text
+NYC_TAXI_DB.RAW.YELLOW_TAXI_TRIPS
+```
+
+et les marts sont créés dans :
+
+```text
+FINAL
+```
+
+---
+
+### Étapes exécutées automatiquement
+
+Le workflow réalise les opérations suivantes :
+
+```text
+Checkout du repository
+        |
+        v
+Installation de Python 3.12
+        |
+        v
+Installation des dépendances
+        |
+        v
+Création du profiles.yml
+        |
+        v
+dbt debug
+        |
+        v
+dbt build
+        |
+        v
+dbt docs generate
+        |
+        v
+Publication de la documentation en artifact GitHub
+```
+
+#### Vérification de la connexion
+
+```bash
+dbt debug
+```
+
+Cette étape vérifie que GitHub Actions peut se connecter correctement à Snowflake.
+
+#### Construction et validation du pipeline
+
+```bash
+dbt build
+```
+
+Cette commande :
+
+- exécute les modèles dbt ;
+- respecte les dépendances entre les modèles ;
+- reconstruit les tables et vues nécessaires ;
+- exécute les tests de qualité.
+
+#### Génération de la documentation
+
+```bash
+dbt docs generate
+```
+
+Les fichiers principaux de documentation dbt sont ensuite conservés comme artifact GitHub :
+
+```text
+manifest.json
+catalog.json
+index.html
+```
+
+---
+
+### Validation du workflow
+
+Le workflow a été testé manuellement depuis GitHub Actions.
+
+Résultat de la première exécution :
+
+```text
+Workflow : dbt Snowflake Pipeline
+Branche   : main
+Statut    : Success
+Durée     : environ 1 min 50 s
+Artifact  : documentation dbt générée
+```
+
+Cette validation confirme que :
+
+- les secrets GitHub sont correctement configurés ;
+- GitHub Actions peut se connecter à Snowflake ;
+- le projet dbt peut être exécuté depuis un environnement distant ;
+- les modèles et les tests sont exécutés automatiquement ;
+- la documentation dbt est générée et sauvegardée.
+
+---
+
+### Périmètre actuel de l'automatisation
+
+Le workflow automatise actuellement la partie :
+
+```text
+RAW déjà présent dans Snowflake
+        |
+        v
+STAGING
+        |
+        v
+FINAL
+        |
+        v
+Tests dbt
+        |
+        v
+Documentation
+```
+
+L'ingestion initiale des fichiers Parquet dans le stage Snowflake et dans la table :
+
+```text
+RAW.YELLOW_TAXI_TRIPS
+```
+
+reste actuellement séparée du workflow dbt.
+
+Cette séparation permet de distinguer :
+
+- l'ingestion des données sources ;
+- les transformations analytiques gérées par dbt.
+
+Une évolution future pourrait automatiser également l'arrivée et l'ingestion de nouveaux fichiers Parquet.
