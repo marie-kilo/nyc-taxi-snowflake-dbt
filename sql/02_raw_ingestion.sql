@@ -35,8 +35,10 @@ CREATE OR REPLACE FILE FORMAT PARQUET_FORMAT
 -- ------------------------------------------------------------
 -- 2. Stage interne contenant les fichiers Parquet
 -- ------------------------------------------------------------
+-- IF NOT EXISTS permet de conserver le stage et les fichiers
+-- déjà déposés lors d'une nouvelle exécution du script.
 
-CREATE OR REPLACE STAGE NYC_TAXI_STAGE
+CREATE STAGE IF NOT EXISTS NYC_TAXI_STAGE
     FILE_FORMAT = PARQUET_FORMAT;
 
 
