@@ -1,0 +1,22 @@
+version: 2
+
+data_tests:
+  - name: test_non_negative_amounts
+    description: >
+      Vérifie qu'aucun montant financier négatif ne subsiste dans les données
+      nettoyées. Le test passe si aucune ligne invalide n'est retournée.
+
+  - name: test_valid_dates
+    description: >
+      Vérifie la cohérence des dates des trajets après nettoyage,
+      notamment la période attendue et l'ordre chronologique du trajet.
+
+  - name: test_valid_distance
+    description: >
+      Vérifie que les distances conservées respectent les règles de qualité :
+      distance strictement positive et non aberrante.
+
+  - name: test_valid_trip_metrics
+    description: >
+      Vérifie la validité des métriques calculées, notamment la durée
+      et la vitesse des trajets.
